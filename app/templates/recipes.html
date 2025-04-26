@@ -10,8 +10,9 @@
   <div class="container mt-5">
     <h1>Food Recipes</h1>
     <div class="mb-3">
-      <a href="{{ url_for('main.new_recipe') }}" class="btn btn-success">Create Recipe</a>
-      <a href="{{ url_for('main.logout') }}" class="btn btn-danger">Logout</a>
+    	<a href="{{ url_for('main.view_profile', user_id=current_user.id) }}" class="btn btn-info">My Profile</a>
+      	<a href="{{ url_for('main.new_recipe') }}" class="btn btn-success">Create Recipe</a>
+      	<a href="{{ url_for('main.logout') }}" class="btn btn-danger">Logout</a>
     </div>
     <hr>
     {% for recipe in recipes %}
@@ -19,7 +20,12 @@
         <h2>
           <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}">{{ recipe.title }}</a>
         </h2>
-        <p><small>By: {{ recipe.author.username }}</small></p>
+        <p><small>By: 
+		<a href="{{ url_for('main.view_profile', user_id=recipe.author.id) }}">
+			{{ recipe.author.username }}
+  		</a>
+	</small></p>
+
         {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
           <a href="{{ url_for('main.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-primary btn-sm">Edit</a>
         {% endif %}
