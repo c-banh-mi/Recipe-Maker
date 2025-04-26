@@ -7,7 +7,7 @@ Users can log in, create recipes, build a collection, and plan meals.
 - Gabriel (@gmartins-11)
 - Jayden (@AloofOddBall)
 
-Ethical Implications (206 words)
+## Ethical Implications
 When building a food recipe blog for our users, we must keep in mind the obligatory ethical and professional responsibilities 
 developers have to ensure user trust, safety, and fairness. Developers must protect any sensitive and personal data by using 
 secure storage and encryption practices, ensuring that users can safely engage with the platform. Furthermore, in the global context, 
@@ -26,6 +26,7 @@ both technology and online communities.
 3. install the project dependencies
 4. run
 5. open web browser and go to http://127.0.0.1:5000/
+
 ```bash
 $ git clone https://github.com/AloofOddBall/Recipe-Maker
 $ cd Recipe-Maker
