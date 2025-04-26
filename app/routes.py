@@ -99,3 +99,18 @@ def delete_recipe(recipe_id):
 def view_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     return render_template("view_recipe.html", recipe=recipe)
+
+@main.route("/profile/<int:user_id>")
+@login_required
+def view_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    posted_recipes = Recipe.query.filter_by(user_id=user.id).all()
+
+    is_self = (current_user.id == user.id)
+
+    return render_template(
+        "view_profile.html",
+        user=user,
+        recipes=posted_recipes,
+        is_self=is_self
+    )
