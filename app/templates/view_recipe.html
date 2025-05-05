@@ -10,8 +10,17 @@
   </style>
 </head>
 <body>
-  <div class="container mt-5">
+  <div class="container mt-5 pb-5">
     <h1>{{ recipe.title }}</h1>
+
+    {# flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
     <p><strong>By:</strong> {{ recipe.author.username }}</p>
     <hr>
     <h4>Description:</h4>
@@ -21,6 +30,7 @@
     <h4>Instructions:</h4>
     <pre>{{ recipe.instructions }}</pre>
     <hr>
+    
     <a href="{{ url_for('main.recipes') }}" class="btn btn-secondary">Back to Recipes</a>
     {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
       <a href="{{ url_for('main.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-primary">Edit Recipe</a>
@@ -28,6 +38,80 @@
         <button type="submit" class="btn btn-danger">Delete Recipe</button>
       </form>
     {% endif %}
+
+    <hr>
+    <h3>Comments</h3>
+    <form action="{{ url_for('main.post_comment', recipe_id=recipe.id) }}" method="post">
+      {{ comment_form.hidden_tag() }}
+      {{ comment_form.body(rows=3, class='form-control', placeholder='Add a comment...') }}
+      {{ comment_form.submit(class='btn btn-primary mt-2') }}
+    </form>
+    <hr>
+
+    {% macro render_comment(c, depth=0) %}
+      {# indent by 4px per depth level #}
+      <div class="ms-{{ depth * 4 }} mb-3 p-2 border rounded">
+        <p><strong>{{ c.author.username }}</strong> <small>{{ c.created_at|tzformat }}</small></p>
+        <p>{{ c.body }}</p>
+
+        {# display current rating #}
+        {% set scores = c.ratings | map(attribute='value') | list %}
+        <p class="mb-2">
+          {# display rating breakdown #}
+            {% set vals = [1,2,3,4,5] %}
+            {% set breakdown = [] %}
+            {% for v in vals %}
+              {% set votes = c.ratings 
+                  | selectattr('value','equalto',v) 
+                  | list %}
+              {% if votes %}
+                {% set _ = breakdown.append( v ~ ' (' ~ votes|length ~ ' vote' 
+                                            ~ ('s' if votes|length > 1 else '') ~ ')' ) %}
+              {% endif %}
+            {% endfor %}
+
+            <p class="mb-2">
+              <strong>Rating:</strong>
+              {% if breakdown %}
+                {{ breakdown | join(', ') }}
+              {% else %}
+                <em>No ratings yet</em>
+              {% endif %}
+            </p>
+        </p>
+
+        <!-- rating display & form -->
+        <form action="{{ url_for('main.rate_comment', comment_id=c.id) }}" method="post" class="d-inline">
+          {{ rating_forms[c.id].hidden_tag() }}
+          {{ rating_forms[c.id].value(class='form-control d-inline w-auto', placeholder='1-5') }}
+          {{ rating_forms[c.id].submit(class='btn btn-sm btn-secondary') }}
+        </form>
+        <!-- reply button toggles #reply-{{ c.id }} -->
+        <button class="btn btn-sm btn-link" data-bs-toggle="collapse" data-bs-target="#reply-{{ c.id }}">Reply</button>
+        {% if current_user.id == c.user_id %}
+          <form action="{{ url_for('main.delete_comment', comment_id=c.id) }}" method="post" class="d-inline">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        {% endif %}
+        <div class="collapse mt-2" id="reply-{{ c.id }}">
+          <form action="{{ url_for('main.post_comment', recipe_id=recipe.id) }}" method="post">
+            {{ comment_form.hidden_tag() }}
+            {{ comment_form.body(rows=2, class='form-control', placeholder='Reply...') }}
+            {{ comment_form.parent_id(value=c.id) }}
+            {{ comment_form.submit(class='btn btn-primary btn-sm mt-1') }}
+          </form>
+        </div>
+        {% for reply in c.replies %}
+          {{ render_comment(reply, depth+1) }}
+        {% endfor %}
+      </div>
+    {% endmacro %}
+
+    {% for c in recipe.comments if not c.parent_id %}
+      {{ render_comment(c) }}
+    {% else %}
+      <p>No comments yet.</p>
+    {% endfor %}
   </div>
 </body>
 </html>

@@ -1,7 +1,7 @@
 #forms.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField, PasswordField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
+from wtforms import StringField, TextAreaField, SubmitField, PasswordField, HiddenField, IntegerField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, NumberRange
 from app.models import User
 from wtforms import ValidationError
 
@@ -33,3 +33,16 @@ class RecipeForm(FlaskForm):
     ingredients = TextAreaField("Ingredients", validators=[DataRequired()])
     instructions = TextAreaField("Instructions", validators=[DataRequired()])
     submit = SubmitField("Submit")
+
+class CommentForm(FlaskForm):
+    body = TextAreaField("Comment", validators=[DataRequired()])
+    parent_id = HiddenField()  # will be blank for top-level comments
+    submit = SubmitField("Post Comment")
+
+class RatingForm(FlaskForm):
+    value = IntegerField(
+        "Rating",
+        validators=[DataRequired(), NumberRange(min=1, max=5)],
+        description="1–5"
+    )
+    submit = SubmitField("Rate Comment")

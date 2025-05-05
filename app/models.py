@@ -12,6 +12,8 @@ class User(UserMixin, db.Model):
     email = sa.Column(sa.String(120), index=True, unique=True, nullable=False)
     password_hash = sa.Column(sa.String(256), nullable=False)
     recipes = so.relationship("Recipe", backref="author", lazy=True)
+    comments = so.relationship('Comment', backref='author', lazy=True)
+    ratings = so.relationship('CommentRating', backref='rater', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -34,6 +36,26 @@ class Recipe(db.Model):
     instructions = sa.Column(sa.Text, nullable=False)
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
     user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"), nullable=False)
+    comments = so.relationship('Comment', backref='recipe', lazy=True)
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
+    
+class Comment(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    body = sa.Column(sa.Text, nullable=False)
+    created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    recipe_id = sa.Column(sa.Integer, sa.ForeignKey('recipe.id'), nullable=False)
+    parent_id = sa.Column(sa.Integer, sa.ForeignKey('comment.id'), nullable=True)
+    replies = so.relationship('Comment', backref=so.backref('parent', remote_side=[id]), lazy=True)
+    ratings = so.relationship('CommentRating', backref='comment', lazy=True, cascade='all, delete')
+
+class CommentRating(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    comment_id = sa.Column(sa.Integer, sa.ForeignKey('comment.id'), nullable=False)
+    value = sa.Column(sa.Integer, nullable=False)  # e.g., 1-5 or +1/-1
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'comment_id', name='uix_user_comment'),
+    )

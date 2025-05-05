@@ -1,9 +1,11 @@
 # app/routes.py
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from app.forms import LoginForm, RegistrationForm, RecipeForm
-from app.models import User, Recipe
+from app.forms import LoginForm, RegistrationForm, RecipeForm, CommentForm, RatingForm
+from app.models import User, Recipe, Comment, CommentRating
 from app import db
+from datetime import datetime
+import zoneinfo
 
 main = Blueprint("main", __name__)
 
@@ -98,7 +100,25 @@ def delete_recipe(recipe_id):
 @login_required
 def view_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
-    return render_template("view_recipe.html", recipe=recipe)
+
+    # convert each comment.created_at to PST
+    pst = zoneinfo.ZoneInfo("America/Los_Angeles")
+    for c in recipe.comments:
+        dt = c.created_at
+        if dt.tzinfo is None:
+            # assume UTC
+            dt = dt.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        c.pst_created = dt.astimezone(pst)
+
+    comment_form = CommentForm()
+    rating_forms = {c.id: RatingForm(prefix=f"rate-{c.id}") for c in recipe.comments}
+
+    return render_template(
+        "view_recipe.html",
+        recipe=recipe,
+        comment_form=comment_form,
+        rating_forms=rating_forms
+    )
 
 @main.route("/profile/<int:user_id>")
 @login_required
@@ -114,3 +134,53 @@ def view_profile(user_id):
         recipes=posted_recipes,
         is_self=is_self
     )
+
+@main.route('/recipe/<int:recipe_id>/comment', methods=['POST'])
+@login_required
+def post_comment(recipe_id):
+    form = CommentForm()
+    if form.validate_on_submit():
+        comment = Comment(
+            body=form.body.data,
+            user_id=current_user.id,
+            recipe_id=recipe_id,
+            parent_id=form.parent_id.data or None
+        )
+        db.session.add(comment)
+        db.session.commit()
+        flash('Comment posted.', 'success')
+    return redirect(url_for('main.view_recipe', recipe_id=recipe_id))
+
+@main.route('/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    if comment.user_id != current_user.id:
+        flash('Not authorized.', 'danger')
+    else:
+        db.session.delete(comment)
+        db.session.commit()
+        flash('Comment deleted.', 'success')
+    return redirect(request.referrer)
+
+@main.route('/comment/<int:comment_id>/rate', methods=['POST'])
+@login_required
+def rate_comment(comment_id):
+    prefix = f"rate-{comment_id}"
+    form = RatingForm(prefix=prefix)
+    if form.validate_on_submit():
+        rating = CommentRating.query.filter_by(
+            user_id=current_user.id, comment_id=comment_id
+        ).first()
+        if rating:
+            rating.value = form.value.data
+        else:
+            rating = CommentRating(
+                user_id=current_user.id,
+                comment_id=comment_id,
+                value=form.value.data
+            )
+            db.session.add(rating)
+        db.session.commit()
+        flash('Rating saved.', 'success')
+    return redirect(request.referrer)

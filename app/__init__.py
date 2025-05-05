@@ -4,6 +4,8 @@ from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from datetime import datetime
+import zoneinfo
 
 # Initialize the extensions
 db = SQLAlchemy()
@@ -30,5 +32,17 @@ def create_app(config_class=Config):
 
     # Import models so they are registered with SQLAlchemy's metadata
     from app import models
+
+    @app.template_filter('tzformat')
+    def tzformat(value: datetime,
+                 fmt: str = "%Y-%m-%d %H:%M",
+                 tz: str = "America/Los_Angeles"):
+        if not value:
+            return ""
+        # assume UTC if naive
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        dst = value.astimezone(zoneinfo.ZoneInfo(tz))
+        return dst.strftime(fmt)
 
     return app
