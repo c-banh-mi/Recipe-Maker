@@ -8,3 +8,10 @@ myenv/
 
 # Ignore database files
 *.db
+
+# Ignore database and cache
+app.db
+__pycache__/
+
+app.db
+__pycache__/

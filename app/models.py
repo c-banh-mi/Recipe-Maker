@@ -42,11 +42,36 @@ class Recipe(db.Model):
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
     user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"), nullable=False)
     comments = so.relationship('Comment', backref='recipe', lazy=True)
+<<<<<<< HEAD
+    tags = sa.Column(sa.String(200), nullable=True)
+    ratings = so.relationship('RecipeRating', backref='recipe', lazy='dynamic')
+=======
     favorites = so.relationship('Favorite', backref='recipe', lazy='dynamic')
+>>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
-    
+    def average_rating(self):
+        ratings = [r.value for r in self.ratings]
+        return round(sum(ratings) / len(ratings), 2) if ratings else None
+
+class RecipeRating(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    recipe_id = sa.Column(sa.Integer, sa.ForeignKey('recipe.id'), nullable=False)
+    value = sa.Column(sa.Integer, nullable=False)
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'recipe_id', name='uix_user_recipe_rating'),
+    )
+
+class Favorite(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    recipe_id = sa.Column(sa.Integer, sa.ForeignKey('recipe.id'), nullable=False)
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'recipe_id', name='uix_user_recipe_favorite'),
+    )
+
 class Comment(db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
     body = sa.Column(sa.Text, nullable=False)
@@ -61,11 +86,13 @@ class CommentRating(db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
     comment_id = sa.Column(sa.Integer, sa.ForeignKey('comment.id'), nullable=False)
-    value = sa.Column(sa.Integer, nullable=False)  # e.g., 1-5 or +1/-1
+    value = sa.Column(sa.Integer, nullable=False)
     __table_args__ = (
         sa.UniqueConstraint('user_id', 'comment_id', name='uix_user_comment'),
     )
 
+<<<<<<< HEAD
+=======
 class Favorite(db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
@@ -73,3 +100,4 @@ class Favorite(db.Model):
     __table_args__ = (
         sa.UniqueConstraint('user_id', 'recipe_id', name='uix_user_recipe_favorite'),
     )
+>>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68

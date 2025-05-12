@@ -33,7 +33,7 @@ class RecipeForm(FlaskForm):
     ingredients = TextAreaField("Ingredients", validators=[DataRequired()])
     instructions = TextAreaField("Instructions", validators=[DataRequired()])
     submit = SubmitField("Submit")
-
+    tags = StringField("Tags (comma-separated)")
 class CommentForm(FlaskForm):
     body = TextAreaField("Comment", validators=[DataRequired()])
     parent_id = HiddenField()  # will be blank for top-level comments
