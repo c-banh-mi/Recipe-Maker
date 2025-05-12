@@ -194,6 +194,23 @@ def post_comment(recipe_id):
         flash('Comment posted.', 'success')
     return redirect(url_for('main.view_recipe', recipe_id=recipe_id))
 
+@main.route('/favorite/<int:recipe_id>', methods=['POST'])
+@login_required
+def toggle_favorite(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash("Removed from favorites.", "info")
+    else:
+        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
+        db.session.add(new_fav)
+        db.session.commit()
+        flash("Saved to favorites!", "success")
+
+    return redirect(request.referrer or url_for('main.recipes'))
+
 @main.route('/comment/<int:comment_id>/delete', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
@@ -234,9 +251,6 @@ def edit_profile():
     form = EditProfileForm()
 
     if form.validate_on_submit():
-        print("Form submitted:", form.validate_on_submit())
-        print("Submitted display name:", form.display_name.data)
-        print("Display name in DB before update:", current_user.display_name)
 
         if form.email.data != current_user.email:
             existing = User.query.filter_by(email=form.email.data).first()
@@ -293,23 +307,3 @@ def top_recipes():
     recipes = Recipe.query.all()
     sorted_recipes = sorted(recipes, key=lambda r: r.average_rating() or 0, reverse=True)
     return render_template("top_recipes.html", recipes=sorted_recipes[:10])
-
-from app.models import Favorite
-
-@main.route('/favorite/<int:recipe_id>', methods=['POST'])
-@login_required
-def toggle_favorite(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
-
-    if existing:
-        db.session.delete(existing)
-        db.session.commit()
-        flash("Removed from favorites.", "info")
-    else:
-        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
-        db.session.add(new_fav)
-        db.session.commit()
-        flash("Saved to favorites!", "success")
-
-    return redirect(request.referrer or url_for('main.recipes'))

@@ -27,7 +27,6 @@ class User(UserMixin, db.Model):
         return f"<User {self.username!r}>"
 
     def has_favorited(self, recipe):
-        from app.models import Favorite
         return Favorite.query.filter_by(user_id=self.id, recipe_id=recipe.id).first() is not None
 
 @login.user_loader
@@ -83,7 +82,8 @@ class CommentRating(db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
     comment_id = sa.Column(sa.Integer, sa.ForeignKey('comment.id'), nullable=False)
-    value = sa.Column(sa.Integer, nullable=False)  # e.g., 1-5 or +1/-1
+    value = sa.Column(sa.Integer, nullable=False)
     __table_args__ = (
         sa.UniqueConstraint('user_id', 'comment_id', name='uix_user_comment'),
     )
+

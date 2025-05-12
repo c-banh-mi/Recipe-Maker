@@ -1,4 +1,3 @@
-<!-- view_recipe.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -21,7 +20,7 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
-    <p><strong>By:</strong> {{ recipe.author.username }}</p>
+    <p><strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}</p>
 
     {% if recipe.average_rating() %}
       <p><strong>Average Rating:</strong>
@@ -56,16 +55,22 @@
     {% if recipe.tags %}
       <p><strong>Tags:</strong>
         {% for tag in recipe.tags.split(',') %}
-          <span class="badge bg-primary">{{ tag.strip() }}</span>
+          <a href="{{ url_for('main.recipes', tag=tag.strip()) }}" class="badge bg-primary text-decoration-none">
+            {{ tag.strip() }}
+          </a>
         {% endfor %}
       </p>
     {% endif %}
 
     {% if recipe.favorites %}
       <p><strong>Favorited by:</strong>
-        {% for fav in recipe.favorites %}
+        {% set favorited_by = recipe.favorites[:3] %}
+        {% for fav in favorited_by %}
           {{ fav.user.display_name or fav.user.username }}{% if not loop.last %}, {% endif %}
         {% endfor %}
+        {% if recipe.favorites|length > 3 %}
+           and {{ recipe.favorites|length - 3 }} more...
+        {% endif %}
       </p>
     {% endif %}
 
@@ -98,7 +103,7 @@
     {% macro render_comment(c, depth=0) %}
       {# indent by 4px per depth level #}
       <div class="ms-{{ depth * 4 }} mb-3 p-2 border rounded">
-        <p><strong>{{ c.author.username }}</strong> <small>{{ c.created_at|tzformat }}</small></p>
+        <p><strong>{{ c.author.display_name or c.author.username }}</strong> <small>{{ c.created_at|tzformat }}</small></p>
         <p>{{ c.body }}</p>
 
         {# display current rating #}
@@ -127,13 +132,11 @@
             </p>
         </p>
 
-        <!-- rating display & form -->
         <form action="{{ url_for('main.rate_comment', comment_id=c.id) }}" method="post" class="d-inline">
           {{ rating_forms[c.id].hidden_tag() }}
           {{ rating_forms[c.id].value(class='form-control d-inline w-auto', placeholder='1-5') }}
           {{ rating_forms[c.id].submit(class='btn btn-sm btn-secondary') }}
         </form>
-        <!-- reply button toggles #reply-{{ c.id }} -->
         <button class="btn btn-sm btn-link" data-bs-toggle="collapse" data-bs-target="#reply-{{ c.id }}">Reply</button>
         {% if current_user.id == c.user_id %}
           <form action="{{ url_for('main.delete_comment', comment_id=c.id) }}" method="post" class="d-inline">
