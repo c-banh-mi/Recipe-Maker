@@ -23,6 +23,18 @@
       {% endfor %}
     </ul>
 
+    <h2>{{ 'My' if is_self else user.display_name or user.username ~ "'s" }} Favorites:</h2>
+    <ul>
+      {% for recipe in favorite_recipes %}
+     	<li>
+      		<a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}">{{ recipe.title }}</a>
+      		<small>by {{ recipe.author.display_name or recipe.author.username }}</small>
+    	</li>
+      {% else %}
+        <p>No favorites yet.</p>
+      {% endfor %}
+    </ul>
+
     <a href="{{ url_for('main.recipes') }}" class="btn btn-secondary">Back to Recipes</a>
   </div>
 </body>

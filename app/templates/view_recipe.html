@@ -20,6 +20,7 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
+<<<<<<< HEAD
     <p><strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}</p>
 
     {% if recipe.average_rating() %}
@@ -74,6 +75,21 @@
       </p>
     {% endif %}
 
+=======
+	<p>
+  		<strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}
+
+  		{% if current_user.is_authenticated %}
+    			<form action="{{ url_for('main.toggle_favorite', recipe_id=recipe.id) }}" method="post" style="display:inline;">
+      				{% if current_user.has_favorited(recipe) %}
+        				<button type="submit" class="btn btn-warning btn-sm ms-2">♥ Unsave</button>
+      				{% else %}
+        				<button type="submit" class="btn btn-outline-warning btn-sm ms-2">♡ Save</button>
+      				{% endif %}
+    			</form>
+  		{% endif %}
+	</p>
+>>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68
     <hr>
     <h4>Description:</h4>
     <pre>{{ recipe.description }}</pre>

@@ -168,13 +168,14 @@ def rate_recipe(recipe_id):
 def view_profile(user_id):
     user = User.query.get_or_404(user_id)
     posted_recipes = Recipe.query.filter_by(user_id=user.id).all()
-
+    favorite_recipes = [fav.recipe for fav in user.favorites]
     is_self = (current_user.id == user.id)
 
     return render_template(
         "view_profile.html",
         user=user,
         recipes=posted_recipes,
+        favorite_recipes=favorite_recipes,
         is_self=is_self
     )
 
@@ -283,6 +284,7 @@ def edit_profile():
 
     return render_template("edit_profile.html", form=form)
 
+<<<<<<< HEAD
 @main.route("/search")
 @login_required
 def search():
@@ -307,3 +309,31 @@ def top_recipes():
     recipes = Recipe.query.all()
     sorted_recipes = sorted(recipes, key=lambda r: r.average_rating() or 0, reverse=True)
     return render_template("top_recipes.html", recipes=sorted_recipes[:10])
+=======
+@main.route('/favorite/<int:recipe_id>', methods=['POST'])
+@login_required
+def toggle_favorite(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash("Removed from favorites.", "info")
+    else:
+        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
+        db.session.add(new_fav)
+        db.session.commit()
+        flash("Saved to favorites!", "success")
+
+    return redirect(request.referrer or url_for("main.recipes"))
+
+@main.route('/favorites')
+@login_required
+def view_favorites():
+    # get all Favorite records for this user
+    favorites = current_user.favorites.all()
+    # extract just the recipes
+    recipes = [fav.recipe for fav in favorites]
+    return render_template("favorites.html", recipes=recipes)
+>>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68
