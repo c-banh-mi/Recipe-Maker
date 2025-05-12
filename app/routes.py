@@ -122,12 +122,10 @@ def delete_recipe(recipe_id):
 def view_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
 
-    # convert each comment.created_at to PST
     pst = zoneinfo.ZoneInfo("America/Los_Angeles")
     for c in recipe.comments:
         dt = c.created_at
         if dt.tzinfo is None:
-            # assume UTC
             dt = dt.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
         c.pst_created = dt.astimezone(pst)
 
@@ -195,23 +193,6 @@ def post_comment(recipe_id):
         flash('Comment posted.', 'success')
     return redirect(url_for('main.view_recipe', recipe_id=recipe_id))
 
-@main.route('/favorite/<int:recipe_id>', methods=['POST'])
-@login_required
-def toggle_favorite(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
-    if existing:
-        db.session.delete(existing)
-        db.session.commit()
-        flash("Removed from favorites.", "info")
-    else:
-        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
-        db.session.add(new_fav)
-        db.session.commit()
-        flash("Saved to favorites!", "success")
-
-    return redirect(request.referrer or url_for('main.recipes'))
-
 @main.route('/comment/<int:comment_id>/delete', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
@@ -272,7 +253,6 @@ def edit_profile():
 
         current_user.display_name = form.display_name.data
         current_user.email = form.email.data
-        print("Saving display name:", form.display_name.data)
         db.session.commit()
 
         flash("Profile updated successfully.", "success")
@@ -284,7 +264,6 @@ def edit_profile():
 
     return render_template("edit_profile.html", form=form)
 
-<<<<<<< HEAD
 @main.route("/search")
 @login_required
 def search():
@@ -309,7 +288,7 @@ def top_recipes():
     recipes = Recipe.query.all()
     sorted_recipes = sorted(recipes, key=lambda r: r.average_rating() or 0, reverse=True)
     return render_template("top_recipes.html", recipes=sorted_recipes[:10])
-=======
+
 @main.route('/favorite/<int:recipe_id>', methods=['POST'])
 @login_required
 def toggle_favorite(recipe_id):
@@ -331,9 +310,6 @@ def toggle_favorite(recipe_id):
 @main.route('/favorites')
 @login_required
 def view_favorites():
-    # get all Favorite records for this user
     favorites = current_user.favorites.all()
-    # extract just the recipes
     recipes = [fav.recipe for fav in favorites]
     return render_template("favorites.html", recipes=recipes)
->>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68

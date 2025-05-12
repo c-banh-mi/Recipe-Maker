@@ -20,65 +20,29 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
-<<<<<<< HEAD
-    <p><strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}</p>
-
-    {% if recipe.average_rating() %}
-      <p><strong>Average Rating:</strong>
-        {% for i in range(1, 6) %}
-          {% if i <= recipe.average_rating()|round(0, 'floor') %}
-            ★
-          {% else %}
-            ☆
-          {% endif %}
-        {% endfor %}
-        ({{ recipe.average_rating() }} / 5)
-      </p>
-    {% else %}
-      <p><em>This recipe hasn't been rated yet.</em></p>
-    {% endif %}
-
-    {% if current_user.is_authenticated %}
-      <form action="{{ url_for('main.rate_recipe', recipe_id=recipe.id) }}" method="post" class="d-flex align-items-center mb-3">
-        <input type="number" name="rating" min="1" max="5" class="form-control w-auto me-2" placeholder="Rate 1–5">
-        <button type="submit" class="btn btn-primary">Rate</button>
-      </form>
-
-      <form action="{{ url_for('main.toggle_favorite', recipe_id=recipe.id) }}" method="post" style="display:inline;">
-        {% if current_user.has_favorited(recipe) %}
-          <button type="submit" class="btn btn-warning btn-sm">♥ Unsave</button>
-        {% else %}
-          <button type="submit" class="btn btn-outline-warning btn-sm">♡ Save</button>
-        {% endif %}
-      </form>
-    {% endif %}
-
-    {% if recipe.tags %}
-      <p><strong>Tags:</strong>
-        {% for tag in recipe.tags.split(',') %}
-          <a href="{{ url_for('main.recipes', tag=tag.strip()) }}" class="badge bg-primary text-decoration-none">
-            {{ tag.strip() }}
-          </a>
-        {% endfor %}
-      </p>
-    {% endif %}
-
-    {% if recipe.favorites %}
-      <p><strong>Favorited by:</strong>
-        {% set favorited_by = recipe.favorites[:3] %}
-        {% for fav in favorited_by %}
-          {{ fav.user.display_name or fav.user.username }}{% if not loop.last %}, {% endif %}
-        {% endfor %}
-        {% if recipe.favorites|length > 3 %}
-           and {{ recipe.favorites|length - 3 }} more...
-        {% endif %}
-      </p>
-    {% endif %}
-
-=======
 	<p>
   		<strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}
+                  {% if recipe.average_rating() %}
+                    <p><strong>Average Rating:</strong>
+                      {% for i in range(1, 6) %}
+                        {% if i <= recipe.average_rating()|round(0, 'floor') %}
+                          ★
+                        {% else %}
+                          ☆
+                        {% endif %}
+                  {% endfor %}
+                  ({{ recipe.average_rating() }} / 5)
+        </p>
+{% else %}
+  <p><em>This recipe hasn't been rated yet.</em></p>
+{% endif %}
 
+{% if current_user.is_authenticated %}
+  <form action="{{ url_for('main.rate_recipe', recipe_id=recipe.id) }}" method="post" class="d-flex align-items-center mb-3">
+    <input type="number" name="rating" min="1" max="5" class="form-control w-auto me-2" placeholder="Rate 1–5">
+    <button type="submit" class="btn btn-primary">Rate</button>
+  </form>
+{% endif %}
   		{% if current_user.is_authenticated %}
     			<form action="{{ url_for('main.toggle_favorite', recipe_id=recipe.id) }}" method="post" style="display:inline;">
       				{% if current_user.has_favorited(recipe) %}
@@ -89,7 +53,6 @@
     			</form>
   		{% endif %}
 	</p>
->>>>>>> 334bd53fe7afa77430d873f236b24faa34996d68
     <hr>
     <h4>Description:</h4>
     <pre>{{ recipe.description }}</pre>

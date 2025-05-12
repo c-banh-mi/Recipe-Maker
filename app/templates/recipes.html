@@ -44,6 +44,21 @@
           </a>
         </small></p>
 
+        {% if recipe.average_rating() %}
+          <p>
+            {% for i in range(1, 6) %}
+              {% if i <= recipe.average_rating()|round(0, 'floor') %}
+                ★
+              {% else %}
+                ☆
+              {% endif %}
+            {% endfor %}
+            <small>({{ recipe.average_rating() }} / 5)</small>
+          </p>
+     {% else %}
+       <p><em>No ratings yet</em></p>
+     {% endif %}
+
         {% if recipe.tags %}
           <p>
             {% for tag in recipe.tags.split(',') %}
