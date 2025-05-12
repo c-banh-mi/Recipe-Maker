@@ -1,8 +1,9 @@
 # app/routes.py
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from app.forms import LoginForm, RegistrationForm, RecipeForm, CommentForm, RatingForm
+from app.forms import LoginForm, RegistrationForm, RecipeForm, CommentForm, RatingForm, EditProfileForm
 from app.models import User, Recipe, Comment, CommentRating
+from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from datetime import datetime
 import zoneinfo
@@ -184,3 +185,44 @@ def rate_comment(comment_id):
         db.session.commit()
         flash('Rating saved.', 'success')
     return redirect(request.referrer)
+
+@main.route("/edit_profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+
+    if form.validate_on_submit():
+        print("Form submitted:", form.validate_on_submit())
+        print("Submitted display name:", form.display_name.data)
+        print("Display name in DB before update:", current_user.display_name)
+
+        if form.email.data != current_user.email:
+            existing = User.query.filter_by(email=form.email.data).first()
+            if existing:
+                flash("Email is already registered.", "danger")
+                return redirect(url_for("main.edit_profile"))
+
+        if form.new_password.data:
+            if not form.current_password.data:
+                flash("Please enter your current password to change it.", "danger")
+                return redirect(url_for("main.edit_profile"))
+
+            if not check_password_hash(current_user.password_hash, form.current_password.data):
+                flash("Current password is incorrect.", "danger")
+                return redirect(url_for("main.edit_profile"))
+
+            current_user.password_hash = generate_password_hash(form.new_password.data)
+
+        current_user.display_name = form.display_name.data
+        current_user.email = form.email.data
+        print("Saving display name:", form.display_name.data)
+        db.session.commit()
+
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for("main.view_profile", user_id=current_user.id))
+
+    if request.method == "GET":
+        form.display_name.data = current_user.display_name
+        form.email.data = current_user.email
+
+    return render_template("edit_profile.html", form=form)

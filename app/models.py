@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(UserMixin, db.Model):
     id = sa.Column(sa.Integer, primary_key=True)
+    display_name = sa.Column(sa.String(64), nullable=True) 
     username = sa.Column(sa.String(64), index=True, unique=True, nullable=False)
     email = sa.Column(sa.String(120), index=True, unique=True, nullable=False)
     password_hash = sa.Column(sa.String(256), nullable=False)

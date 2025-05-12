@@ -1,7 +1,7 @@
 #forms.py
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SubmitField, PasswordField, HiddenField, IntegerField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, NumberRange
+from wtforms.validators import DataRequired, Length, Email, EqualTo, NumberRange, Optional
 from app.models import User
 from wtforms import ValidationError
 
@@ -46,3 +46,14 @@ class RatingForm(FlaskForm):
         description="1–5"
     )
     submit = SubmitField("Rate Comment")
+
+class EditProfileForm(FlaskForm):
+    display_name = StringField("Display Name", validators=[DataRequired(), Length(max=64)])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    current_password = PasswordField("Current Password", validators=[Optional()])
+    new_password = PasswordField("New Password", validators=[Optional(), Length(min=6)])
+    confirm_password = PasswordField(
+        "Confirm Password",
+        validators=[Optional(), EqualTo("new_password", message="Passwords must match")]
+    )
+    submit = SubmitField("Save Changes")
