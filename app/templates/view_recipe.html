@@ -21,7 +21,19 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
-    <p><strong>By:</strong> {{ recipe.author.username }}</p>
+	<p>
+  		<strong>By:</strong> {{ recipe.author.display_name or recipe.author.username }}
+
+  		{% if current_user.is_authenticated %}
+    			<form action="{{ url_for('main.toggle_favorite', recipe_id=recipe.id) }}" method="post" style="display:inline;">
+      				{% if current_user.has_favorited(recipe) %}
+        				<button type="submit" class="btn btn-warning btn-sm ms-2">♥ Unsave</button>
+      				{% else %}
+        				<button type="submit" class="btn btn-outline-warning btn-sm ms-2">♡ Save</button>
+      				{% endif %}
+    			</form>
+  		{% endif %}
+	</p>
     <hr>
     <h4>Description:</h4>
     <pre>{{ recipe.description }}</pre>

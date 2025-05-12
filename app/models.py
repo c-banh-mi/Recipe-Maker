@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     recipes = so.relationship("Recipe", backref="author", lazy=True)
     comments = so.relationship('Comment', backref='author', lazy=True)
     ratings = so.relationship('CommentRating', backref='rater', lazy=True)
+    favorites = so.relationship('Favorite', backref='user', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -24,6 +25,9 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"<User {self.username!r}>"
+
+    def has_favorited(self, recipe):
+        return Favorite.query.filter_by(user_id=self.id, recipe_id=recipe.id).first() is not None
 
 @login.user_loader
 def load_user(user_id):
@@ -38,6 +42,7 @@ class Recipe(db.Model):
     created_at = sa.Column(sa.DateTime, default=datetime.utcnow)
     user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"), nullable=False)
     comments = so.relationship('Comment', backref='recipe', lazy=True)
+    favorites = so.relationship('Favorite', backref='recipe', lazy='dynamic')
 
     def __repr__(self):
         return f"<Recipe {self.title}>"
@@ -59,4 +64,12 @@ class CommentRating(db.Model):
     value = sa.Column(sa.Integer, nullable=False)  # e.g., 1-5 or +1/-1
     __table_args__ = (
         sa.UniqueConstraint('user_id', 'comment_id', name='uix_user_comment'),
+    )
+
+class Favorite(db.Model):
+    id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    recipe_id = sa.Column(sa.Integer, sa.ForeignKey('recipe.id'), nullable=False)
+    __table_args__ = (
+        sa.UniqueConstraint('user_id', 'recipe_id', name='uix_user_recipe_favorite'),
     )
