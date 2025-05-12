@@ -9,22 +9,49 @@
 <body>
   <div class="container mt-5">
     <h1>Food Recipes</h1>
+
     <div class="mb-3">
-    	<a href="{{ url_for('main.view_profile', user_id=current_user.id) }}" class="btn btn-info">My Profile</a>
-      	<a href="{{ url_for('main.new_recipe') }}" class="btn btn-success">Create Recipe</a>
-      	<a href="{{ url_for('main.logout') }}" class="btn btn-danger">Logout</a>
+      <a href="{{ url_for('main.view_profile', user_id=current_user.id) }}" class="btn btn-info">My Profile</a>
+      <a href="{{ url_for('main.new_recipe') }}" class="btn btn-success">Create Recipe</a>
+      <a href="{{ url_for('main.logout') }}" class="btn btn-danger">Logout</a>
     </div>
+
+    <form method="GET" action="{{ url_for('main.search') }}" class="d-flex mb-4">
+      <input type="text" name="q" class="form-control me-2" placeholder="Search by title, ingredients, or tags...">
+      <button type="submit" class="btn btn-outline-primary">Search</button>
+    </form>
+
+    <form method="GET" action="{{ url_for('main.recipes') }}" class="mb-4">
+      <label for="tag" class="form-label">Filter by Tag:</label>
+      <select name="tag" id="tag" class="form-select w-auto d-inline">
+        <option value="">All</option>
+      {% for tag in all_tags %}
+        <option value="{{ tag }}" {% if tag == selected_tag %}selected{% endif %}>{{ tag|capitalize }}</option>
+      {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline-secondary ms-2">Filter</button>
+    </form>
+
     <hr>
+
     {% for recipe in recipes %}
       <div class="mb-3">
         <h2>
           <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}">{{ recipe.title }}</a>
         </h2>
-        <p><small>By: 
-		<a href="{{ url_for('main.view_profile', user_id=recipe.author.id) }}">
-			{{ recipe.author.display_name or recipe.author.username }}
-  		</a>
-	</small></p>
+        <p><small>By:
+          <a href="{{ url_for('main.view_profile', user_id=recipe.author.id) }}">
+            {{ recipe.author.display_name or recipe.author.username }}
+          </a>
+        </small></p>
+
+        {% if recipe.tags %}
+          <p>
+            {% for tag in recipe.tags.split(',') %}
+              <span class="badge bg-primary">{{ tag.strip() }}</span>
+            {% endfor %}
+          </p>
+        {% endif %}
 
         {% if current_user.is_authenticated and current_user.id == recipe.user_id %}
           <a href="{{ url_for('main.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-primary btn-sm">Edit</a>

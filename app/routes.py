@@ -2,9 +2,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm, RecipeForm, CommentForm, RatingForm, EditProfileForm
-from app.models import User, Recipe, Comment, CommentRating
+from app.models import User, Recipe, Comment, CommentRating, Favorite
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
+import sqlalchemy as sa
 from datetime import datetime
 import zoneinfo
 
@@ -46,8 +47,25 @@ def logout():
 @main.route("/recipes")
 @login_required
 def recipes():
-    recipes = Recipe.query.all()
-    return render_template("recipes.html", recipes=recipes)
+    tag = request.args.get("tag", "")
+    all_recipes = Recipe.query
+
+    if tag:
+        all_recipes = all_recipes.filter(Recipe.tags.ilike(f"%{tag}%"))
+
+    recipes = all_recipes.all()
+
+    all_tags = set()
+    for r in Recipe.query.all():
+        if r.tags:
+            all_tags.update(tag.strip() for tag in r.tags.split(","))
+
+    return render_template(
+        "recipes.html",
+        recipes=recipes,
+        all_tags=sorted(all_tags),
+        selected_tag=tag
+    )
 
 @main.route("/recipe/new", methods=["GET", "POST"])
 @login_required
@@ -59,6 +77,7 @@ def new_recipe():
             description=form.description.data,
             ingredients=form.ingredients.data,
             instructions=form.instructions.data,
+            tags=form.tags.data.lower(),
             user_id=current_user.id
         )
         db.session.add(recipe)
@@ -80,6 +99,7 @@ def edit_recipe(recipe_id):
         recipe.description = form.description.data
         recipe.ingredients = form.ingredients.data
         recipe.instructions = form.instructions.data
+        recipe.tags=form.tags.data.lower()
         db.session.commit()
         flash("Recipe updated successfully!", "success")
         return redirect(url_for("main.view_recipe", recipe_id=recipe.id))
@@ -120,6 +140,28 @@ def view_recipe(recipe_id):
         comment_form=comment_form,
         rating_forms=rating_forms
     )
+
+@main.route('/recipe/<int:recipe_id>/rate', methods=['POST'])
+@login_required
+def rate_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    value = int(request.form.get("rating", 0))
+
+    if 1 <= value <= 5:
+        from app.models import RecipeRating
+        rating = RecipeRating.query.filter_by(user_id=current_user.id, recipe_id=recipe.id).first()
+        if rating:
+            rating.value = value
+        else:
+            rating = RecipeRating(user_id=current_user.id, recipe_id=recipe.id, value=value)
+            db.session.add(rating)
+        db.session.commit()
+        flash("Rating saved!", "success")
+    else:
+        flash("Invalid rating value.", "danger")
+
+    return redirect(url_for('main.view_recipe', recipe_id=recipe.id))
+
 
 @main.route("/profile/<int:user_id>")
 @login_required
@@ -226,3 +268,48 @@ def edit_profile():
         form.email.data = current_user.email
 
     return render_template("edit_profile.html", form=form)
+
+@main.route("/search")
+@login_required
+def search():
+    query = request.args.get("q", "").strip()
+    recipes = []
+
+    if query:
+        search_term = f"%{query.lower()}%"
+        recipes = Recipe.query.filter(
+            sa.or_(
+                Recipe.title.ilike(search_term),
+                Recipe.ingredients.ilike(search_term),
+                Recipe.tags.ilike(search_term)
+            )
+        ).all()
+
+    return render_template("search_results.html", query=query, recipes=recipes)
+
+@main.route("/top")
+@login_required
+def top_recipes():
+    recipes = Recipe.query.all()
+    sorted_recipes = sorted(recipes, key=lambda r: r.average_rating() or 0, reverse=True)
+    return render_template("top_recipes.html", recipes=sorted_recipes[:10])
+
+from app.models import Favorite
+
+@main.route('/favorite/<int:recipe_id>', methods=['POST'])
+@login_required
+def toggle_favorite(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash("Removed from favorites.", "info")
+    else:
+        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
+        db.session.add(new_fav)
+        db.session.commit()
+        flash("Saved to favorites!", "success")
+
+    return redirect(request.referrer or url_for('main.recipes'))
