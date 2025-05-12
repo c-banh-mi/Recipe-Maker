@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.forms import LoginForm, RegistrationForm, RecipeForm, CommentForm, RatingForm, EditProfileForm
-from app.models import User, Recipe, Comment, CommentRating
+from app.models import User, Recipe, Comment, CommentRating, Favorite
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from datetime import datetime
@@ -126,13 +126,14 @@ def view_recipe(recipe_id):
 def view_profile(user_id):
     user = User.query.get_or_404(user_id)
     posted_recipes = Recipe.query.filter_by(user_id=user.id).all()
-
+    favorite_recipes = [fav.recipe for fav in user.favorites]
     is_self = (current_user.id == user.id)
 
     return render_template(
         "view_profile.html",
         user=user,
         recipes=posted_recipes,
+        favorite_recipes=favorite_recipes,
         is_self=is_self
     )
 
@@ -226,3 +227,30 @@ def edit_profile():
         form.email.data = current_user.email
 
     return render_template("edit_profile.html", form=form)
+
+@main.route('/favorite/<int:recipe_id>', methods=['POST'])
+@login_required
+def toggle_favorite(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    existing = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash("Removed from favorites.", "info")
+    else:
+        new_fav = Favorite(user_id=current_user.id, recipe_id=recipe_id)
+        db.session.add(new_fav)
+        db.session.commit()
+        flash("Saved to favorites!", "success")
+
+    return redirect(request.referrer or url_for("main.recipes"))
+
+@main.route('/favorites')
+@login_required
+def view_favorites():
+    # get all Favorite records for this user
+    favorites = current_user.favorites.all()
+    # extract just the recipes
+    recipes = [fav.recipe for fav in favorites]
+    return render_template("favorites.html", recipes=recipes)
